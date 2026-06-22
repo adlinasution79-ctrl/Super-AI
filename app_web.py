@@ -8,7 +8,7 @@ from PIL import Image
 
 # 1. Setup halaman web
 streamlit.set_page_config(page_title="Super AI Vision & Doc Reader", page_icon="🧠")
-streamlit.title("🧠 Super AI: Pembaca Dokumen & Gambar")
+streamlit.title("🧠 Adli AI: Pembaca Dokumen & Gambar")
 streamlit.write("Unggah file Dokumen (PDF/DOCX/TXT) ATAU Gambar (JPG/PNG), lalu ajukan pertanyaan Anda ke AI.")
 
 # 2. Muat API Key dari .env
