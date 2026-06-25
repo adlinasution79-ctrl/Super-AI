@@ -9,7 +9,7 @@ from PIL import Image
 # 1. Setup halaman web
 streamlit.set_page_config(page_title="Super AI Vision & Doc Reader", page_icon="🧠", layout="centered")
 
-# Kustomisasi CSS Global agar tampilan tombol dan UI jauh lebih keren
+# Kustomisasi CSS Global agar tampilan tombol dan UI jauh lebih keren & modern
 streamlit.markdown("""
 <style>
     /* Membuat efek gradien modern pada tombol utama */
@@ -28,9 +28,29 @@ streamlit.markdown("""
         box-shadow: 0 6px 20px rgba(0, 180, 219, 0.4) !important;
         color: #f0f0f0 !important;
     }
-    /* Mempercantik input teks */
+
+    /* Kustomisasi kolom input teks agar mirip seperti kolom chat AI modern (Gemini/ChatGPT) */
     .stTextInput div div input {
-        border-radius: 10px !important;
+        background-color: #202123 !important; /* Warna latar belakang gelap minimalis */
+        color: #e2e8f0 !important; /* Warna teks putih abu-abu halus */
+        border: 1px solid #4d4d4f !important; /* Border tipis samar */
+        border-radius: 28px !important; /* Sudut membulat penuh berbentuk kapsul */
+        padding: 14px 24px !important; /* Jarak dalam agar input lebih tebal dan luas */
+        font-size: 16px !important;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    /* Efek visual saat kolom input diklik / aktif ketik */
+    .stTextInput div div input:focus {
+        border-color: #00B4DB !important; /* Warna border berubah biru saat aktif */
+        box-shadow: 0 0 0 2px rgba(0, 180, 219, 0.2) !important;
+        background-color: #2a2b2d !important;
+    }
+    
+    /* Menghilangkan label teks bawaan Streamlit di atas input agar terlihat bersih */
+    .stTextInput label {
+        display: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -89,8 +109,11 @@ if file_diunggah is not None:
         </div>
         """, unsafe_allow_html=True)
         
-        # Kotak pertanyaan khusus gambar
-        tanya_gambar = streamlit.text_input("Tanya sesuatu tentang gambar ini (Contoh: 'Jelaskan isi gambar ini' atau 'Terjemahkan teks di foto ini'):")
+        # Kotak pertanyaan khusus gambar (Teks petunjuk dipindah ke placeholder karena label disembunyikan)
+        tanya_gambar = streamlit.text_input(
+            "Tanya Gambar", 
+            placeholder="Ask anything about this image... (Contoh: Jelaskan isi gambar ini)"
+        )
         if tanya_gambar:
             with streamlit.spinner("AI sedang menganalisis gambar..."):
                 response = streamlit.session_state.client.models.generate_content(
@@ -130,7 +153,11 @@ if file_diunggah is not None:
                     streamlit.markdown("### 📝 Rangkuman AI:")
                     streamlit.write(response.text)
                     
-            tanya_doc = streamlit.text_input("Tanya hal spesifik tentang isi dokumen ini:")
+            # Kotak pertanyaan khusus dokumen (Teks petunjuk dipindah ke placeholder karena label disembunyikan)
+            tanya_doc = streamlit.text_input(
+                "Tanya Dokumen", 
+                placeholder="Ask anything about this document... (Contoh: Apa kesimpulan file ini?)"
+            )
             if tanya_doc:
                 with streamlit.spinner("AI sedang mencari jawaban..."):
                     response = streamlit.session_state.client.models.generate_content(
