@@ -1,4 +1,5 @@
 import os
+import re  # Pustaka reguler ekspresi untuk deteksi link YouTube dengan aman
 import streamlit as streamlit
 import streamlit.components.v1 as components  # Untuk menyematkan YouTube iframe
 from google import genai
@@ -6,7 +7,6 @@ from dotenv import load_dotenv
 from pypdf import PdfReader
 import docx
 from PIL import Image
-from urllib.parse import urlparse, parse_qs  # Pustaka standar untuk memproses URL dengan aman
 
 # 1. Setup halaman web
 streamlit.set_page_config(page_title="Super AI Vision & Doc Reader", page_icon="🧠", layout="centered")
@@ -71,46 +71,24 @@ streamlit.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- REVISI FITUR: PEMUTAR MUSIK DARI YOUTUBE (BEBAS ERROR) ---
+# --- PANEL PENGATURAN MUSIK DI SIDEBAR ---
 streamlit.sidebar.title("🎵 Musik BG dari YouTube")
 streamlit.sidebar.write("Tempel link video YouTube (Lofi/Chill) pilihan Anda untuk menemani sesi chat.")
 
-# Link default (Lofi Girl) jika user belum memasukkan link sendiri
+# Link default (Lofi Girl) jika belum memasukkan link sendiri
 link_default = "https://youtube.com"
 url_youtube = streamlit.sidebar.text_input("Masukkan Link YouTube:", value=link_default, key="yt_url_input")
 
-# Fungsi aman untuk mengambil Video ID dari YouTube tanpa splitting manual yang rentan error
+# Fungsi ekstraksi Video ID menggunakan RegEx yang dijamin menghasilkan string bersih
 def dapatkan_video_id(url):
-    parsed_url = urlparse(url)
-    if parsed_url.hostname == 'youtu.be':
-        return parsed_url.path[1:]
-    if parsed_url.hostname in ('://youtube.com', 'youtube.com'):
-        if parsed_url.path == '/watch':
-            p = parse_qs(parsed_url.query)
-            return p.get('v', [None])[0]
-        if parsed_url.path.startswith(('/embed/', '/v/')):
-            return parsed_url.path.split('/')[2]
+    pola = r'(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})'
+    pencocokan = re.search(pola, url)
+    if pencocokan:
+        return pencocokan.group(1)
     return None
 
 video_id = dapatkan_video_id(url_youtube)
-
-if video_id:
-    # Membuat iframe pemutar YouTube mini yang ringkas di sidebar
-    # Menambahkan parameter loop=1 dan playlist=[video_id] agar musik berputar terus tanpa berhenti
-    html_code = f"""
-    <iframe width="100%" height="80" 
-        src="https://://youtube.com/embed/{video_id}?autoplay=0&loop=1&playlist={video_id}" 
-        title="YouTube music player" frameborder="0" 
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-        allowfullscreen>
-    </iframe>
-    """
-    with streamlit.sidebar:
-        components.html(html_code, height=90)
-    streamlit.sidebar.caption("💡 *Klik tombol play pada pemutar mini di atas untuk memulai musik.*")
-else:
-    streamlit.sidebar.error("Format link YouTube tidak valid. Silakan periksa kembali tautannya.")
-# --------------------------------------------------------------
+# ----------------------------------------
 
 streamlit.title("🧠GChat")
 streamlit.write("Unggah file Dokumen (PDF/DOCX/TXT) ATAU Gambar (JPG/PNG), lalu ajukan pertanyaan Anda ke AI.")
@@ -183,7 +161,6 @@ if file_diunggah is not None:
         )
         
         if tanya_gambar:
-            # Masukkan chat user ke dalam riwayat memori aplikasi
             streamlit.session_state.riwayat_chat.append({"role": "user", "content": tanya_gambar})
             with streamlit.chat_message("user"):
                 streamlit.markdown(tanya_gambar)
@@ -195,13 +172,11 @@ if file_diunggah is not None:
                 for c in streamlit.session_state.riwayat_chat[:-1]:
                     konteks_pesan.append(f"{c['role']}: {c['content']}")
                 
-                # Kirim semua riwayat teks chat + objek gambar utama ke model AI
                 response = streamlit.session_state.client.models.generate_content(
                     model='gemini-2.5-flash',
                     contents=[*konteks_pesan, f"user: {tanya_gambar}", gambar]
                 )
                 
-                # Masukkan respons AI ke memori dan tampilkan di layar
                 streamlit.session_state.riwayat_chat.append({"role": "assistant", "content": response.text})
                 with streamlit.chat_message("assistant"):
                     streamlit.markdown(response.text)
@@ -235,3 +210,29 @@ if file_diunggah is not None:
                         contents=f"Rangkum dokumen ini secara padat:\n\n{isi_dokumen}"
                     )
                     streamlit.markdown("### 📝 Rangkuman AI:")
+                    streamlit.write(response.text)
+            
+            # Tampilkan percakapan yang sudah berjalan sebelumnya
+            for chat in streamlit.session_state.riwayat_chat:
+                with streamlit.chat_message(chat["role"]):
+                    streamlit.markdown(chat["content"])
+
+            # Kotak input pertanyaan baru tentang isi dokumen
+            tanya_dokumen = streamlit.text_input(
+                "Tanya Dokumen", 
+                placeholder="Tanyakan apa saja tentang isi dokumen ini...",
+                key="input_dokumen"
+            )
+            
+            if tanya_dokumen:
+                streamlit.session_state.riwayat_chat.append({"role": "user", "content": tanya_dokumen})
+                with streamlit.chat_message("user"):
+                    streamlit.markdown(tanya_dokumen)
+                    
+                with streamlit.spinner("AI sedang menganalisis dokumen..."):
+                    konteks_pesan = [
+                        f"Konteks Teks Dokumen yang diunggah pengguna:\n{isi_dokumen}\n\nJawab pertanyaan berdasarkan teks di atas."
+                    ]
+                    for c in streamlit.session_state.riwayat_chat[:-1]:
+                        konteks_pesan.append(f"{c['role']}: {c['content']}")
+                    
