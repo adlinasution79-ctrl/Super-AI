@@ -29,7 +29,12 @@ streamlit.markdown("""
         color: #f0f0f0 !important;
     }
 
-    /* Menghilangkan garis merah/border luar bawaan dari container Streamlit */
+    /* --- PERBAIKAN: Menghilangkan bayangan abu-abu luar pada container Streamlit --- */
+    div[data-testid="stTextInputRootElement"] {
+        border: none !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+    }
     .stTextInput > div {
         border: none !important;
         background-color: transparent !important;
@@ -52,7 +57,7 @@ streamlit.markdown("""
     /* Efek visual saat kolom input diklik / aktif ketik */
     .stTextInput div div input:focus {
         border-color: #00B4DB !important; /* Warna border berubah biru saat aktif */
-        outline: none !important; /* Memastikan garis merah tetap hilang saat diklik */
+        outline: none !important;
         box-shadow: 0 0 0 2px rgba(0, 180, 219, 0.2) !important;
         background-color: #2a2b2d !important;
     }
@@ -64,7 +69,7 @@ streamlit.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-streamlit.title("🧠 : Pembaca Dokumen & Gambar")
+streamlit.title("🧠 AI: Pembaca Dokumen & Gambar")
 streamlit.write("Unggah file Dokumen (PDF/DOCX/TXT) ATAU Gambar (JPG/PNG), lalu ajukan pertanyaan Anda ke AI.")
 
 # 2. Muat API Key dari .env
@@ -101,7 +106,7 @@ if file_diunggah is not None:
         gambar = Image.open(file_diunggah)
         streamlit.image(gambar, caption="Pratinjau Gambar yang Diunggah", use_container_width=True)
         
-        # Card Kustom HTML untuk Gambar (Menggunakan st.markdown agar aman)
+        # Card Kustom HTML untuk Gambar
         streamlit.markdown("""
         <div style="
             background: linear-gradient(135deg, rgba(46, 213, 115, 0.15) 0%, rgba(46, 213, 115, 0.05) 100%);
