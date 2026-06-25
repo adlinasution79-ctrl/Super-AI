@@ -72,8 +72,8 @@ streamlit.markdown("""
 """, unsafe_allow_html=True)
 
 # --- PANEL PENGATURAN MUSIK DI SIDEBAR ---
-streamlit.sidebar.title("🎵 Musik BG dari YouTube")
-streamlit.sidebar.write("Tempel link video YouTube (Lofi/Chill) pilihan Anda untuk menemani sesi chat.")
+streamlit.sidebar.title("🎵 Dangdutan lah")
+streamlit.sidebar.write("Tempel link video YouTube pilihan Anda untuk menemani sesi chat.")
 
 # Link default (Lofi Girl) jika belum memasukkan link sendiri
 link_default = "https://youtube.com"
@@ -91,6 +91,7 @@ video_id = dapatkan_video_id(url_youtube)
 # ----------------------------------------
 
 streamlit.title("🧠GChat")
+streamlit.write("Kamu nanya?? kamu bertanya tanya???.")
 streamlit.write("Unggah file Dokumen (PDF/DOCX/TXT) ATAU Gambar (JPG/PNG), lalu ajukan pertanyaan Anda ke AI.")
 
 # 2. Muat API Key dari .env
