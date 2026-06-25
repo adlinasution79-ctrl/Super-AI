@@ -69,6 +69,24 @@ streamlit.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# --- FITUR BARU: PEMUTAR MUSIK DI SIDEBAR ---
+streamlit.sidebar.title("🎵 Musik Santai")
+streamlit.sidebar.write("Putar musik agar sesi pencarian Anda lebih nyaman dan fokus.")
+
+# URL file audio publik bebas royalti yang stabil untuk dicoba langsung
+daftar_musik = {
+    "Lofi Ambient Chill": "https://soundhelix.com",
+    "Soft Coding Music": "https://soundhelix.com",
+    "Deep Focus Beats": "https://soundhelix.com"
+}
+
+pilihan_musik = streamlit.sidebar.selectbox("Pilih Suasana Musik:", list(daftar_musik.keys()))
+
+# Memanggil widget pemutar audio bawaan Streamlit dengan loop otomatis aktif
+streamlit.sidebar.audio(daftar_musik[pilihan_musik], format="audio/mp3", loop=True)
+streamlit.sidebar.caption("💡 *Centang opsi 'Loop' atau putar berulang pada pemutar jika tersedia di browser Anda.*")
+# --------------------------------------------
+
 streamlit.title("🧠GChat")
 streamlit.write("Unggah file Dokumen (PDF/DOCX/TXT) ATAU Gambar (JPG/PNG), lalu ajukan pertanyaan Anda ke AI.")
 
@@ -79,7 +97,7 @@ api_key_rahasia = os.getenv("GEMINI_API_KEY")
 if "client" not in streamlit.session_state:
     streamlit.session_state.client = genai.Client(api_key=api_key_rahasia)
 
-# --- MEMORI RIWAYAT CHAT (BARU) ---
+# --- MEMORI RIWAYAT CHAT ---
 if "riwayat_chat" not in streamlit.session_state:
     streamlit.session_state.riwayat_chat = []
 
@@ -146,7 +164,6 @@ if file_diunggah is not None:
                 streamlit.markdown(tanya_gambar)
                 
             with streamlit.spinner("AI sedang berpikir..."):
-                # Bangun seluruh riwayat pesan untuk dikirim ke Gemini agar AI paham konteks obrolan sebelumnya
                 konteks_pesan = [
                     f"Konteks Gambar: Pengguna mengunggah sebuah gambar ke dalam sistem aplikasi."
                 ]
@@ -200,31 +217,19 @@ if file_diunggah is not None:
                 with streamlit.chat_message(chat["role"]):
                     streamlit.markdown(chat["content"])
 
-            # Kotak input pertanyaan baru
-            tanya_doc = streamlit.text_input(
+            # Kotak input pertanyaan baru tentang isi dokumen
+            tanya_dokumen = streamlit.text_input(
                 "Tanya Dokumen", 
-                placeholder="Ask anything about this document... (Contoh: Apa kesimpulan file ini?)",
-                key="input_doc"
+                placeholder="Tanyakan apa saja tentang isi dokumen ini...",
+                key="input_dokumen"
             )
             
-            if tanya_doc:
-                # Masukkan chat user ke dalam riwayat memori aplikasi
-                streamlit.session_state.riwayat_chat.append({"role": "user", "content": tanya_doc})
+            if tanya_dokumen:
+                streamlit.session_state.riwayat_chat.append({"role": "user", "content": tanya_dokumen})
                 with streamlit.chat_message("user"):
-                    streamlit.markdown(tanya_doc)
+                    streamlit.markdown(tanya_dokumen)
                     
-                with streamlit.spinner("AI sedang mencari jawaban..."):
-                    # Bangun seluruh riwayat pesan untuk dikirim ke Gemini agar tahu konteks lama
-                    konteks_pesan = [f"Isi Dokumen yang diunggah pengguna:\n{isi_dokumen}\n\n---\nRiwayat Percakapan:"]
-                    for c in streamlit.session_state.riwayat_chat[:-1]:
-                        konteks_pesan.append(f"{c['role']}: {c['content']}")
-                    
-                    response = streamlit.session_state.client.models.generate_content(
-                        model='gemini-2.5-flash',
-                        contents=[*konteks_pesan, f"user: {tanya_doc}"]
-                    )
-                    
-                    # Masukkan respons AI ke memori dan tampilkan di layar
-                    streamlit.session_state.riwayat_chat.append({"role": "assistant", "content": response.text})
-                    with streamlit.chat_message("assistant"):
-                        streamlit.markdown(response.text)
+                with streamlit.spinner("AI sedang menganalisis dokumen..."):
+                    konteks_pesan = [
+                        f"Konteks Teks Dokumen yang diunggah pengguna:\n{isi_dokumen}\n\nJawab pertanyaan berdasarkan teks di atas."
+                    ]
