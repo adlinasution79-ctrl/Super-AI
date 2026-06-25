@@ -9,7 +9,7 @@ from PIL import Image
 # 1. Setup halaman web
 streamlit.set_page_config(page_title="Super AI Vision & Doc Reader", page_icon="🧠", layout="centered")
 
-# Kustomisasi CSS Global agar tampilan tombol dan UI jauh lebih keren & modern
+# Kustomisasi CSS Global agar tampilan tombol, chat, dan UI jauh lebih keren & modern
 streamlit.markdown("""
 <style>
     /* Membuat efek gradien modern pada tombol utama */
@@ -29,7 +29,7 @@ streamlit.markdown("""
         color: #f0f0f0 !important;
     }
 
-    /* --- PERBAIKAN: Menghilangkan bayangan abu-abu luar pada container Streamlit --- */
+    /* Menghilangkan sisa bayangan abu-abu luar pada container Streamlit */
     div[data-testid="stTextInputRootElement"] {
         border: none !important;
         background-color: transparent !important;
@@ -43,20 +43,20 @@ streamlit.markdown("""
 
     /* Kustomisasi kolom input teks utama */
     .stTextInput div div input {
-        background-color: #202123 !important; /* Warna latar belakang gelap minimalis */
-        color: #e2e8f0 !important; /* Warna teks putih abu-abu halus */
-        border: 1px solid #4d4d4f !important; /* Border asli tipis */
-        border-radius: 28px !important; /* Sudut membulat penuh berbentuk kapsul */
-        padding: 14px 24px !important; /* Jarak dalam agar input lebih tebal */
+        background-color: #202123 !important;
+        color: #e2e8f0 !important;
+        border: 1px solid #4d4d4f !important;
+        border-radius: 28px !important;
+        padding: 14px 24px !important;
         font-size: 16px !important;
-        outline: none !important; /* Menghilangkan garis merah bawaan browser */
+        outline: none !important;
         box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
         transition: all 0.3s ease !important;
     }
     
     /* Efek visual saat kolom input diklik / aktif ketik */
     .stTextInput div div input:focus {
-        border-color: #00B4DB !important; /* Warna border berubah biru saat aktif */
+        border-color: #00B4DB !important;
         outline: none !important;
         box-shadow: 0 0 0 2px rgba(0, 180, 219, 0.2) !important;
         background-color: #2a2b2d !important;
@@ -69,7 +69,7 @@ streamlit.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-streamlit.title("🧠 AI: Pembaca Dokumen & Gambar")
+streamlit.title("🧠 : Pembaca Dokumen & Gambar")
 streamlit.write("Unggah file Dokumen (PDF/DOCX/TXT) ATAU Gambar (JPG/PNG), lalu ajukan pertanyaan Anda ke AI.")
 
 # 2. Muat API Key dari .env
@@ -78,6 +78,10 @@ api_key_rahasia = os.getenv("GEMINI_API_KEY")
 
 if "client" not in streamlit.session_state:
     streamlit.session_state.client = genai.Client(api_key=api_key_rahasia)
+
+# --- MEMORI RIWAYAT CHAT (BARU) ---
+if "riwayat_chat" not in streamlit.session_state:
+    streamlit.session_state.riwayat_chat = []
 
 # Fungsi ekstraksi teks dokumen
 def ekstrak_teks(file):
@@ -123,19 +127,43 @@ if file_diunggah is not None:
         </div>
         """, unsafe_allow_html=True)
         
-        # Kotak pertanyaan khusus gambar
+        # Tampilkan percakapan yang sudah berjalan sebelumnya
+        for chat in streamlit.session_state.riwayat_chat:
+            with streamlit.chat_message(chat["role"]):
+                streamlit.markdown(chat["content"])
+
+        # Kotak input pertanyaan baru
         tanya_gambar = streamlit.text_input(
             "Tanya Gambar", 
-            placeholder="Ask anything about this image... (Contoh: Jelaskan isi gambar ini)"
+            placeholder="Ask anything about this image... (Contoh: Jelaskan isi gambar ini)",
+            key="input_gambar"
         )
+        
         if tanya_gambar:
-            with streamlit.spinner("AI sedang menganalisis gambar..."):
+            # Masukkan chat user ke dalam riwayat memori aplikasi
+            streamlit.session_state.riwayat_chat.append({"role": "user", "content": tanya_gambar})
+            with streamlit.chat_message("user"):
+                streamlit.markdown(tanya_gambar)
+                
+            with streamlit.spinner("AI sedang berpikir..."):
+                # Bangun seluruh riwayat pesan untuk dikirim ke Gemini agar AI paham konteks obrolan sebelumnya
+                konteks_pesan = [
+                    f"Konteks Gambar: Pengguna mengunggah sebuah gambar ke dalam sistem aplikasi."
+                ]
+                for c in streamlit.session_state.riwayat_chat[:-1]:
+                    konteks_pesan.append(f"{c['role']}: {c['content']}")
+                
+                # Kirim semua riwayat teks chat + objek gambar utama ke model AI
                 response = streamlit.session_state.client.models.generate_content(
                     model='gemini-2.5-flash',
-                    contents=[tanya_gambar, gambar]
+                    contents=[*konteks_pesan, f"user: {tanya_gambar}", gambar]
                 )
-                streamlit.markdown("### 🤖 Analisis AI:")
-                streamlit.write(response.text)
+                
+                # Masukkan respons AI ke memori dan tampilkan di layar
+                streamlit.session_state.riwayat_chat.append({"role": "assistant", "content": response.text})
+                with streamlit.chat_message("assistant"):
+                    streamlit.markdown(response.text)
+                    streamlit.rerun()
 
     # KONDISI B: JIKA YANG DIUNGGAH ADALAH DOKUMEN
     else:
@@ -166,17 +194,37 @@ if file_diunggah is not None:
                     )
                     streamlit.markdown("### 📝 Rangkuman AI:")
                     streamlit.write(response.text)
-                    
-            # Kotak pertanyaan khusus dokumen
+            
+            # Tampilkan percakapan yang sudah berjalan sebelumnya
+            for chat in streamlit.session_state.riwayat_chat:
+                with streamlit.chat_message(chat["role"]):
+                    streamlit.markdown(chat["content"])
+
+            # Kotak input pertanyaan baru
             tanya_doc = streamlit.text_input(
                 "Tanya Dokumen", 
-                placeholder="Ask anything about this document... (Contoh: Apa kesimpulan file ini?)"
+                placeholder="Ask anything about this document... (Contoh: Apa kesimpulan file ini?)",
+                key="input_doc"
             )
+            
             if tanya_doc:
+                # Masukkan chat user ke dalam riwayat memori aplikasi
+                streamlit.session_state.riwayat_chat.append({"role": "user", "content": tanya_doc})
+                with streamlit.chat_message("user"):
+                    streamlit.markdown(tanya_doc)
+                    
                 with streamlit.spinner("AI sedang mencari jawaban..."):
+                    # Bangun seluruh riwayat pesan untuk dikirim ke Gemini agar tahu konteks lama
+                    konteks_pesan = [f"Isi Dokumen yang diunggah pengguna:\n{isi_dokumen}\n\n---\nRiwayat Percakapan:"]
+                    for c in streamlit.session_state.riwayat_chat[:-1]:
+                        konteks_pesan.append(f"{c['role']}: {c['content']}")
+                    
                     response = streamlit.session_state.client.models.generate_content(
                         model='gemini-2.5-flash',
-                        contents=f"Pertanyaan: {tanya_doc}\n\nDokumen:\n{isi_dokumen}"
+                        contents=[*konteks_pesan, f"user: {tanya_doc}"]
                     )
-                    streamlit.markdown("### 🤖 Jawaban AI:")
-                    streamlit.write(response.text)
+                    
+                    # Masukkan respons AI ke memori dan tampilkan di layar
+                    streamlit.session_state.riwayat_chat.append({"role": "assistant", "content": response.text})
+                    with streamlit.chat_message("assistant"):
+                        streamlit.markdown(response.text)
