@@ -69,7 +69,7 @@ streamlit.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-streamlit.title("🧠 : Pembaca Dokumen & Gambar")
+streamlit.title("🧠GChat")
 streamlit.write("Unggah file Dokumen (PDF/DOCX/TXT) ATAU Gambar (JPG/PNG), lalu ajukan pertanyaan Anda ke AI.")
 
 # 2. Muat API Key dari .env
