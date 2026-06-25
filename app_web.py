@@ -29,14 +29,22 @@ streamlit.markdown("""
         color: #f0f0f0 !important;
     }
 
-    /* Kustomisasi kolom input teks agar mirip seperti kolom chat AI modern (Gemini/ChatGPT) */
+    /* Menghilangkan garis merah/border luar bawaan dari container Streamlit */
+    .stTextInput > div {
+        border: none !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+    }
+
+    /* Kustomisasi kolom input teks utama */
     .stTextInput div div input {
         background-color: #202123 !important; /* Warna latar belakang gelap minimalis */
         color: #e2e8f0 !important; /* Warna teks putih abu-abu halus */
-        border: 1px solid #4d4d4f !important; /* Border tipis samar */
+        border: 1px solid #4d4d4f !important; /* Border asli tipis */
         border-radius: 28px !important; /* Sudut membulat penuh berbentuk kapsul */
-        padding: 14px 24px !important; /* Jarak dalam agar input lebih tebal dan luas */
+        padding: 14px 24px !important; /* Jarak dalam agar input lebih tebal */
         font-size: 16px !important;
+        outline: none !important; /* Menghilangkan garis merah bawaan browser */
         box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
         transition: all 0.3s ease !important;
     }
@@ -44,6 +52,7 @@ streamlit.markdown("""
     /* Efek visual saat kolom input diklik / aktif ketik */
     .stTextInput div div input:focus {
         border-color: #00B4DB !important; /* Warna border berubah biru saat aktif */
+        outline: none !important; /* Memastikan garis merah tetap hilang saat diklik */
         box-shadow: 0 0 0 2px rgba(0, 180, 219, 0.2) !important;
         background-color: #2a2b2d !important;
     }
@@ -109,7 +118,7 @@ if file_diunggah is not None:
         </div>
         """, unsafe_allow_html=True)
         
-        # Kotak pertanyaan khusus gambar (Teks petunjuk dipindah ke placeholder karena label disembunyikan)
+        # Kotak pertanyaan khusus gambar
         tanya_gambar = streamlit.text_input(
             "Tanya Gambar", 
             placeholder="Ask anything about this image... (Contoh: Jelaskan isi gambar ini)"
@@ -127,7 +136,7 @@ if file_diunggah is not None:
     else:
         isi_dokumen = ekstrak_teks(file_diunggah)
         if isi_dokumen:
-            # Card Kustom HTML untuk Dokumen yang sudah diperbaiki variabelnya
+            # Card Kustom HTML untuk Dokumen
             streamlit.markdown(f"""
             <div style="
                 background: linear-gradient(135deg, rgba(0, 180, 219, 0.15) 0%, rgba(0, 131, 176, 0.05) 100%);
@@ -153,7 +162,7 @@ if file_diunggah is not None:
                     streamlit.markdown("### 📝 Rangkuman AI:")
                     streamlit.write(response.text)
                     
-            # Kotak pertanyaan khusus dokumen (Teks petunjuk dipindah ke placeholder karena label disembunyikan)
+            # Kotak pertanyaan khusus dokumen
             tanya_doc = streamlit.text_input(
                 "Tanya Dokumen", 
                 placeholder="Ask anything about this document... (Contoh: Apa kesimpulan file ini?)"
